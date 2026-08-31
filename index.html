@@ -6,6 +6,20 @@
     <title>EstiMate — Building Cost Estimator</title>
     <meta name="description" content="Quantity takeoff, BOQ costing, rate analysis and property valuation for Nepal building work." />
 
+    <!--
+      Fonts loaded here in <head>, not inside the app's JS bundle, so the
+      browser starts fetching them immediately instead of after React
+      loads. This is what was causing the "Poor" CLS/LCP scores in
+      Cloudflare Web Analytics — text was rendering in a fallback font,
+      then visibly swapping to the real font a moment later.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+
     <!-- Favicon -->
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -31,7 +45,6 @@
 
     <!-- Cloudflare Web Analytics -->
     <script type='module' src='https://static.cloudflareinsights.com/beacon.min.js' data-cf-beacon='{"token": "1e211282d9a544c0bfe68a4adcae39bd"}'></script>
-    <!-- End Cloudflare Web Analytics -->
   </head>
   <body>
     <div id="root"></div>
