@@ -34,9 +34,13 @@ const COLORS = {
   lineSoft: "#DEDACE",
 };
 
-const FONT_IMPORT = `
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
-`;
+// Fonts are now loaded directly in index.html's <head> (see public/index.html
+// or the project root index.html) so the browser fetches them immediately
+// alongside the page, instead of after this JS bundle runs — that late
+// @import here used to cause a visible font swap and was the main source
+// of the "Poor" CLS/LCP scores. Kept as an empty string so the <style>
+// tag below stays harmless if anything still references FONT_IMPORT.
+const FONT_IMPORT = ``;
 
 // ---------------------------------------------------------------------------
 // Default item library (SAMPLE rates — clearly flagged as editable/illustrative)
