@@ -594,7 +594,7 @@ export default function App() {
       >
         {[
           { key: "boq", label: "Quantity & BOQ" },
-          { key: "rateAnalysis", label: "Rate Analysis (Unit 4)" },
+          { key: "rateAnalysis", label: "Rate Analysis" },
           { key: "roadEarthwork", label: "Road / Canal Earthwork" },
           { key: "valuation", label: "Property Valuation" },
         ].map((t) => (
