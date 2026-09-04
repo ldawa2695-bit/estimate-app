@@ -12,6 +12,7 @@ import {
   Check,
   FolderOpen,
   ChevronRight,
+  MessageCircle,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -85,6 +86,13 @@ const DEFAULT_LIBRARY = [
 ];
 
 const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ---------------------------------------------------------------------------
+// Supplier lead-gen — WhatsApp number that "Get Supplier Quotes" messages go
+// to. Replace with your own number in international format, digits only, no
+// +, no spaces, no leading 0 (e.g. Nepal mobile 98XXXXXXXX -> "97798XXXXXXXX").
+// ---------------------------------------------------------------------------
+const SUPPLIER_WHATSAPP_NUMBER = "9779706231842";
 const fmt = (n) =>
   (Math.round((n + Number.EPSILON) * 100) / 100).toLocaleString("en-IN", {
     minimumFractionDigits: 2,
@@ -235,11 +243,157 @@ function ToastStack({ toasts }) {
 }
 
 // ---------------------------------------------------------------------------
+// Lead capture — "Get Supplier Quotes". No backend, no stored data: the
+// visitor fills this in, and submitting opens WhatsApp with the message
+// already written, addressed to your number. They hit send themselves, so
+// the lead arrives as a normal WhatsApp message — nothing to check, nothing
+// that can get lost in someone else's browser storage.
+// ---------------------------------------------------------------------------
+function LeadCaptureModal({ colors: COLORS, rows, grandTotal, fmt, projectName, onClose, onSent }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [project, setProject] = useState("");
+  const [consent, setConsent] = useState(false);
+
+  const canSend = name.trim() && phone.trim() && consent;
+
+  function handleSend() {
+    if (!canSend) return;
+    const topItems = rows
+      .slice(0, 5)
+      .map((r) => `- ${r.name}: ${fmt(r.qty)} ${r.unit}`)
+      .join("\n");
+    const message = [
+      `Hi, I used EstiMate to plan my project and I'd like quotes for materials.`,
+      ``,
+      `Name: ${name.trim()}`,
+      `Phone: ${phone.trim()}`,
+      project.trim() ? `What I'm building: ${project.trim()}` : null,
+      ``,
+      `Project: ${projectName || "Untitled Building Estimate"}`,
+      `Estimated grand total: Rs. ${fmt(grandTotal)}`,
+      rows.length ? `Main items:\n${topItems}${rows.length > 5 ? `\n...and ${rows.length - 5} more` : ""}` : null,
+    ]
+      .filter(Boolean)
+      .join("\n");
+
+    const url = `https://wa.me/${SUPPLIER_WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+    onSent();
+  }
+
+  return (
+    <div
+      className="no-print"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(18,40,63,0.45)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 70,
+        padding: 16,
+      }}
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        style={{
+          background: COLORS.card,
+          borderRadius: 8,
+          width: "100%",
+          maxWidth: 420,
+          padding: 22,
+          boxShadow: "0 20px 50px rgba(0,0,0,0.3)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
+          <div>
+            <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 17, color: COLORS.blueprint }}>
+              Get Supplier Quotes
+            </div>
+            <div style={{ fontSize: 12.5, color: COLORS.steel, marginTop: 2 }}>
+              Send your details over WhatsApp to get quotes on the materials in this bill.
+            </div>
+          </div>
+          <button onClick={onClose} style={{ border: "none", background: "transparent", color: COLORS.steel, cursor: "pointer", padding: 4 }}>
+            <X size={18} />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 16 }}>
+          <label style={{ fontSize: 12.5, color: COLORS.ink }}>
+            Your name
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Ram Bahadur"
+              style={{ width: "100%", marginTop: 4, padding: "9px 10px", border: `1px solid ${COLORS.line}`, borderRadius: 4, fontSize: 13.5, boxSizing: "border-box" }}
+            />
+          </label>
+          <label style={{ fontSize: 12.5, color: COLORS.ink }}>
+            Phone number
+            <input
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              placeholder="e.g. 98XXXXXXXX"
+              style={{ width: "100%", marginTop: 4, padding: "9px 10px", border: `1px solid ${COLORS.line}`, borderRadius: 4, fontSize: 13.5, boxSizing: "border-box" }}
+            />
+          </label>
+          <label style={{ fontSize: 12.5, color: COLORS.ink }}>
+            What are you building? (optional)
+            <input
+              value={project}
+              onChange={(e) => setProject(e.target.value)}
+              placeholder="e.g. 2-storey house in Tarkeshwor"
+              style={{ width: "100%", marginTop: 4, padding: "9px 10px", border: `1px solid ${COLORS.line}`, borderRadius: 4, fontSize: 13.5, boxSizing: "border-box" }}
+            />
+          </label>
+
+          <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12, color: COLORS.steel, marginTop: 4, cursor: "pointer" }}>
+            <input type="checkbox" checked={consent} onChange={(e) => setConsent(e.target.checked)} style={{ marginTop: 2 }} />
+            <span>I agree to share these details, along with this bill's item list and total, with a supplier to get quotes.</span>
+          </label>
+        </div>
+
+        <button
+          onClick={handleSend}
+          disabled={!canSend}
+          style={{
+            width: "100%",
+            marginTop: 16,
+            background: canSend ? "#25D366" : COLORS.line,
+            color: "#fff",
+            border: "none",
+            borderRadius: 5,
+            padding: "11px 14px",
+            fontWeight: 600,
+            fontSize: 14,
+            cursor: canSend ? "pointer" : "not-allowed",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 8,
+          }}
+        >
+          <MessageCircle size={16} /> Send via WhatsApp
+        </button>
+        <div style={{ fontSize: 11, color: COLORS.steel, marginTop: 8, textAlign: "center" }}>
+          Opens WhatsApp with your message ready — you choose whether to actually send it.
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main App
 // ---------------------------------------------------------------------------
 export default function App() {
   const [library, setLibrary] = useState(DEFAULT_LIBRARY);
   const [rows, setRows] = useState([]);
+
   const [activeCat, setActiveCat] = useState(CATEGORIES[0].key);
   const [dims, setDims] = useState({ l: "", w: "", h: "", n: "" });
   const [pickedItem, setPickedItem] = useState(DEFAULT_LIBRARY[0].id);
@@ -256,6 +410,7 @@ export default function App() {
   const [confirmRemoveSaved, setConfirmRemoveSaved] = useState(null);
   const [savingBusy, setSavingBusy] = useState(false);
   const [showLoadPanel, setShowLoadPanel] = useState(false);
+  const [showLeadForm, setShowLeadForm] = useState(false);
   const printRef = useRef(null);
   const { toasts, push } = useToasts();
 
@@ -402,7 +557,13 @@ export default function App() {
   }
 
   function printEstimate() {
-    window.print();
+    // window.print() blocks the main thread for a moment while the browser
+    // builds the print dialog — that's normal browser behavior, but it was
+    // showing up as a slow "click response" in Core Web Vitals (INP).
+    // Deferring it by one tick lets the button's own click feedback paint
+    // first, so the click still feels instant even though printing itself
+    // takes the same amount of time either way.
+    setTimeout(() => window.print(), 0);
   }
 
   function exportCSV() {
@@ -1125,7 +1286,61 @@ export default function App() {
                   <span style={{ fontFamily: "'IBM Plex Mono', monospace" }}>Rs. {fmt(grandTotal)}</span>
                 </div>
               </div>
+
+              {rows.length > 0 && (
+                <div
+                  className="no-print"
+                  style={{
+                    borderTop: `1px solid ${COLORS.line}`,
+                    padding: "14px 16px",
+                    background: "#F3FBF6",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ fontSize: 12.5, color: COLORS.ink }}>
+                    Ready to buy these materials? Get quotes from a local supplier.
+                  </div>
+                  <button
+                    onClick={() => setShowLeadForm(true)}
+                    style={{
+                      background: "#25D366",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 5,
+                      padding: "9px 16px",
+                      fontWeight: 600,
+                      fontSize: 13,
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 7,
+                      flexShrink: 0,
+                    }}
+                  >
+                    <MessageCircle size={15} /> Get Supplier Quotes
+                  </button>
+                </div>
+              )}
             </div>
+
+            {showLeadForm && (
+              <LeadCaptureModal
+                colors={COLORS}
+                rows={rows}
+                grandTotal={grandTotal}
+                fmt={fmt}
+                projectName={projectName}
+                onClose={() => setShowLeadForm(false)}
+                onSent={() => {
+                  setShowLeadForm(false);
+                  push("Opened WhatsApp with your details — send it whenever you're ready.");
+                }}
+              />
+            )}
 
             {/* Actions */}
             <div className="no-print" style={{ display: "flex", gap: 10, marginTop: 14, alignItems: "center", flexWrap: "wrap", position: "relative" }}>
